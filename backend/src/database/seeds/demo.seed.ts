@@ -138,6 +138,17 @@ export class DemoSeed {
       4,
     );
 
+    // Demo: choferes con última posición conocida en Perico (punto de partida)
+    // para que el pasajero vea el móvil en el mapa de Mi Viaje.
+    await this.choferRepository.update(
+      { idChofer: idChofer1 },
+      { latitud: -24.386421, longitud: -65.114175 },
+    );
+    await this.choferRepository.update(
+      { idChofer: idChofer2 },
+      { latitud: -24.386421, longitud: -65.114175 },
+    );
+
     console.log('✅ Seed de datos completado');
     console.log('📊 Datos creados:');
     console.log(`  - 1 remisería: ${remiseria.nombre}`);
@@ -345,14 +356,14 @@ export class DemoSeed {
 
   private async createDestinosDemo(): Promise<Destino[]> {
     const localidades = [
-      { nombre: 'San Salvador de Jujuy', latitud: -24.1858, longitud: -65.2995 },
-      { nombre: 'Perico', latitud: -24.2731, longitud: -65.0589 },
-      { nombre: 'Palpalá', latitud: -23.9833, longitud: -65.4667 },
-      { nombre: 'Humahuaca', latitud: -23.2056, longitud: -65.3506 },
-      { nombre: 'La Quiaca', latitud: -22.1056, longitud: -65.5969 },
-      { nombre: 'San Pedro de Jujuy', latitud: -24.2333, longitud: -64.8667 },
-      { nombre: 'El Carmen', latitud: -24.4167, longitud: -65.3167 },
-      { nombre: 'Calilegua', latitud: -23.6500, longitud: -64.8500 },
+      { nombre: 'San Salvador de Jujuy', latitud: -24.191027, longitud: -65.302419 },
+      { nombre: 'Perico', latitud: -24.386421, longitud: -65.114175 },
+      { nombre: 'Palpalá', latitud: -24.2566, longitud: -65.2119 },
+      { nombre: 'Humahuaca', latitud: -23.2054, longitud: -65.3495 },
+      { nombre: 'La Quiaca', latitud: -22.1042, longitud: -65.5701 },
+      { nombre: 'San Pedro de Jujuy', latitud: -24.2313, longitud: -64.8661 },
+      { nombre: 'El Carmen', latitud: -24.3891, longitud: -65.2622 },
+      { nombre: 'Calilegua', latitud: -23.7790, longitud: -64.8490 },
     ];
 
     const destinos: Destino[] = [];
@@ -400,12 +411,14 @@ export class DemoSeed {
       existing.asientosDisponibles = asientos;
       existing.estadoViaje = ViajeEstado.ABIERTO;
       existing.ruta = {
-        distanciaKm: 15,
-        duracionMinutos: 20,
+        distanciaKm: 33,
+        duracionMinutos: 30,
         puntos: [
-          { latitud: -24.1858, longitud: -65.2995 },
-          { latitud: -24.2358, longitud: -65.2495 },
-          { latitud: -24.2858, longitud: -65.1995 },
+          { latitud: -24.191027, longitud: -65.302419 },
+          { latitud: -24.2350, longitud: -65.2750 },
+          { latitud: -24.2800, longitud: -65.2300 },
+          { latitud: -24.3300, longitud: -65.1800 },
+          { latitud: -24.386421, longitud: -65.114175 },
         ],
       };
       return this.viajeRepository.save(existing);
@@ -422,12 +435,14 @@ export class DemoSeed {
       asientosDisponibles: asientos,
       estadoViaje: ViajeEstado.ABIERTO,
       ruta: {
-        distanciaKm: 15,
-        duracionMinutos: 20,
+        distanciaKm: 33,
+        duracionMinutos: 30,
         puntos: [
-          { latitud: -24.1858, longitud: -65.2995 },
-          { latitud: -24.2358, longitud: -65.2495 },
-          { latitud: -24.2858, longitud: -65.1995 },
+          { latitud: -24.191027, longitud: -65.302419 },
+          { latitud: -24.2350, longitud: -65.2750 },
+          { latitud: -24.2800, longitud: -65.2300 },
+          { latitud: -24.3300, longitud: -65.1800 },
+          { latitud: -24.386421, longitud: -65.114175 },
         ],
       },
     });

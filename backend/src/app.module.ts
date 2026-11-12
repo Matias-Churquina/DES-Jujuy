@@ -14,6 +14,7 @@ import { PagosModule } from './modules/pagos/pagos.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { PaquetesModule } from './modules/paquetes/paquetes.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
+import { SeedsModule } from './database/seeds/seeds.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { WebsocketModule } from './modules/websocket/websocket.module';
     PaquetesModule,
     ChatModule,
     WebsocketModule,
+    SeedsModule,
   ],
 })
 export class AppModule {}
