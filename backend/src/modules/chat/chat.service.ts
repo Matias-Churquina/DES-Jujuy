@@ -90,4 +90,53 @@ export class ChatService {
     });
     return { noLeidos: count };
   }
+
+  // Lista de conversaciones del usuario: reservas donde es pasajero o chofer,
+  // con último mensaje y cantidad de no leídos.
+  async conversaciones(idUsuario: number) {
+    const reservas = await this.reservaRepository
+      .createQueryBuilder('r')
+      .innerJoinAndSelect('r.pasajero', 'pasajero')
+      .innerJoinAndSelect('pasajero.usuario', 'pUsuario')
+      .innerJoinAndSelect('r.viaje', 'viaje')
+      .innerJoinAndSelect('viaje.chofer', 'chofer')
+      .innerJoinAndSelect('chofer.usuario', 'cUsuario')
+      .leftJoinAndSelect('viaje.origen', 'origen')
+      .leftJoinAndSelect('viaje.destino', 'destino')
+      .where('pUsuario.idUsuario = :idUsuario', { idUsuario })
+      .orWhere('cUsuario.idUsuario = :idUsuario', { idUsuario })
+      .orderBy('r.idReserva', 'DESC')
+      .getMany();
+
+    return Promise.all(
+      reservas.map(async (r) => {
+        const ultimo = await this.mensajeRepository.findOne({
+          where: { idReserva: r.idReserva },
+          order: { createdAt: 'DESC' },
+        });
+        const noLeidos = await this.mensajeRepository.count({
+          where: { idReserva: r.idReserva, idReceptor: idUsuario, leido: false },
+        });
+        const esPasajero = r.pasajero?.idUsuario === idUsuario;
+        const otro = esPasajero ? r.viaje?.chofer?.usuario : r.pasajero?.usuario;
+        return {
+          idReserva: r.idReserva,
+          estadoReserva: r.estadoReserva,
+          otroUsuario: otro
+            ? { nombre: otro.nombre, apellido: otro.apellido }
+            : null,
+          viaje: r.viaje
+            ? {
+                origen: r.viaje.origen?.nombre,
+                destino: r.viaje.destino?.nombre,
+              }
+            : null,
+          ultimoMensaje: ultimo
+            ? { texto: ultimo.texto, createdAt: ultimo.createdAt }
+            : null,
+          noLeidos,
+        };
+      }),
+    );
+  }
 }

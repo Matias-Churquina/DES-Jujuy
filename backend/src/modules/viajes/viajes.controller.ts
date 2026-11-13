@@ -26,12 +26,13 @@ export class ViajesController {
   }
 
   @Get('disponibles')
-  @ApiOperation({ summary: 'Buscar viajes disponibles por origen/destino (IDs)' })
+  @ApiOperation({ summary: 'Buscar viajes disponibles por origen/destino (IDs) y fecha opcional' })
   async findDisponibles(
     @Query('origen', ParseIntPipe) origen: number,
     @Query('destino', ParseIntPipe) destino: number,
+    @Query('fecha') fecha?: string,
   ) {
-    return this.viajesService.findDisponibles(origen, destino);
+    return this.viajesService.findDisponibles(origen, destino, fecha);
   }
 
   @Get('chofer/:idChofer')

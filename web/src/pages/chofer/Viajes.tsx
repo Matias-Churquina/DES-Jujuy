@@ -3,6 +3,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/store/auth';
 import { PageHeader, Spinner, Badge, Button, EmptyState, Input, Card } from '@/components/ui';
 import ChatWidget from '@/components/ChatWidget';
+import Icon from '@/components/Icon';
 import { useToast } from '@/components/Toast';
 import type { Viaje, Destino, Auto, Reserva } from '@/types';
 
@@ -201,45 +202,43 @@ export default function ChoferViajes() {
               </div>
 
               {reservas[v.idViaje] && (
-                <div className="mt-4 border-t border-gray-100 pt-4">
+                <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
                   {reservas[v.idViaje].length === 0 ? (
                     <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Sin reservas todavía</p>
                   ) : (
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-left text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                          <th className="pb-2">Pasajero</th>
-                          <th className="pb-2">Asientos</th>
-                          <th className="pb-2">Total</th>
-                          <th className="pb-2">Pago</th>
-                          <th className="pb-2">Estado</th>
-                          <th className="pb-2"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                        {reservas[v.idViaje].map((r) => (
-                          <tr key={r.idReserva}>
-                            <td className="py-2">{r.pasajero?.usuario ? `${r.pasajero.usuario.nombre} ${r.pasajero.usuario.apellido}` : `#${r.idPasajero}`}</td>
-                            <td className="py-2">{r.cantidadAsientos}</td>
-                            <td className="py-2 font-semibold">${r.importeTotal}</td>
-                            <td className="py-2">{r.canalPago || '—'}</td>
-                            <td className="py-2"><Badge color={r.estadoPago === 'PAGADO' ? 'green' : 'yellow'}>{r.estadoPago}</Badge></td>
-                            <td className="py-2 text-right space-x-2">
-                              {r.estadoReserva !== 'CANCELADA' && (
-                                <Button variant="ghost" onClick={() => setChatReserva(r.idReserva)}>
-                                  💬
-                                </Button>
-                              )}
-                              {r.canalPago === 'EFECTIVO' && r.estadoPago !== 'PAGADO' && r.estadoReserva === 'CONFIRMADA' && (
-                                <Button variant="secondary" onClick={() => cobrarEfectivo(r.idReserva, v.idViaje)}>
-                                  Cobrar
-                                </Button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <div className="reserva-list">
+                      {reservas[v.idViaje].map((r) => (
+                        <div className="reserva-item" key={r.idReserva}>
+                          <div className="reserva-info">
+                            <strong>
+                              {r.pasajero?.usuario
+                                ? `${r.pasajero.usuario.nombre} ${r.pasajero.usuario.apellido}`
+                                : `Pasajero #${r.idPasajero}`}
+                            </strong>
+                            <span>
+                              {r.cantidadAsientos} asiento{r.cantidadAsientos > 1 ? 's' : ''} · ${r.importeTotal} · {r.canalPago || '—'}
+                            </span>
+                          </div>
+                          <div className="reserva-actions">
+                            <Badge color={r.estadoPago === 'PAGADO' ? 'green' : 'yellow'}>{r.estadoPago}</Badge>
+                            {r.estadoReserva !== 'CANCELADA' && (
+                              <button
+                                className="reserva-chat-btn"
+                                onClick={() => setChatReserva(r.idReserva)}
+                                aria-label="Abrir chat con el pasajero"
+                              >
+                                <Icon name="message" size={17} />
+                              </button>
+                            )}
+                            {r.canalPago === 'EFECTIVO' && r.estadoPago !== 'PAGADO' && r.estadoReserva === 'CONFIRMADA' && (
+                              <Button variant="secondary" onClick={() => cobrarEfectivo(r.idReserva, v.idViaje)}>
+                                Cobrar
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               )}

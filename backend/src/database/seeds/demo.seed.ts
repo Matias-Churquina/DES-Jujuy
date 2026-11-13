@@ -35,8 +35,9 @@ export class DemoSeed {
   async seed() {
     console.log('🌱 Iniciando seed de datos demo...');
 
-    // Crear remisería demo
+    // Crear remiserías demo
     const remiseria = await this.createRemiseriaDemo();
+    const remiseriaPerico = await this.createRemiseriaPerico();
 
     // Crear usuarios demo
     const admin = await this.createUsuarioDemo(
@@ -63,6 +64,22 @@ export class DemoSeed {
       remiseria.idRemiseria,
     );
 
+    const chofer3 = await this.createUsuarioDemo(
+      'Pedro',
+      'Fernandez',
+      'pedro.chofer@des.com',
+      UserRole.CHOFER,
+      remiseriaPerico.idRemiseria,
+    );
+
+    const chofer4 = await this.createUsuarioDemo(
+      'Javier',
+      'Diaz',
+      'javier.chofer@des.com',
+      UserRole.CHOFER,
+      remiseriaPerico.idRemiseria,
+    );
+
     const pasajero1 = await this.createUsuarioDemo(
       'Ana',
       'Garcia',
@@ -80,8 +97,10 @@ export class DemoSeed {
     // Obtener IDs de los choferes
     const idChofer1 = chofer1.chofer?.idChofer;
     const idChofer2 = chofer2.chofer?.idChofer;
+    const idChofer3 = chofer3.chofer?.idChofer;
+    const idChofer4 = chofer4.chofer?.idChofer;
 
-    if (!idChofer1 || !idChofer2) {
+    if (!idChofer1 || !idChofer2 || !idChofer3 || !idChofer4) {
       throw new Error('No se pudieron crear los choferes correctamente');
     }
 
@@ -102,6 +121,24 @@ export class DemoSeed {
       2019,
       idChofer2,
       remiseria.idRemiseria,
+    );
+
+    const auto3 = await this.createAutoDemo(
+      'GHI789',
+      'Fiat',
+      'Cronos',
+      2022,
+      idChofer3,
+      remiseriaPerico.idRemiseria,
+    );
+
+    const auto4 = await this.createAutoDemo(
+      'JKL012',
+      'Chevrolet',
+      'Onix',
+      2021,
+      idChofer4,
+      remiseriaPerico.idRemiseria,
     );
 
     // Crear catálogo de destinos
@@ -138,8 +175,29 @@ export class DemoSeed {
       4,
     );
 
+    await this.createViajeDemo(
+      idChofer3,
+      auto3.idAuto,
+      perico.idDestino,
+      sanSalvador.idDestino,
+      fmt(manana),
+      '09:30:00',
+      4,
+    );
+
+    await this.createViajeDemo(
+      idChofer4,
+      auto4.idAuto,
+      sanSalvador.idDestino,
+      perico.idDestino,
+      fmt(manana),
+      '16:30:00',
+      4,
+    );
+
     // Demo: choferes con última posición conocida en Perico (punto de partida)
-    // para que el pasajero vea el móvil en el mapa de Mi Viaje.
+    // para que el pasajero vea el móvil en el mapa de Mi Viaje y el admin
+    // vea la flota en el dashboard. Offsets chicos para que no se tapen.
     await this.choferRepository.update(
       { idChofer: idChofer1 },
       { latitud: -24.386421, longitud: -65.114175 },
@@ -148,17 +206,27 @@ export class DemoSeed {
       { idChofer: idChofer2 },
       { latitud: -24.386421, longitud: -65.114175 },
     );
+    await this.choferRepository.update(
+      { idChofer: idChofer3 },
+      { latitud: -24.3847, longitud: -65.1168 },
+    );
+    await this.choferRepository.update(
+      { idChofer: idChofer4 },
+      { latitud: -24.3881, longitud: -65.1115 },
+    );
 
     console.log('✅ Seed de datos completado');
     console.log('📊 Datos creados:');
-    console.log(`  - 1 remisería: ${remiseria.nombre}`);
+    console.log(`  - 2 remiserías: ${remiseria.nombre}, ${remiseriaPerico.nombre}`);
     console.log(`  - ${admin.nombre} (Admin)`);
     console.log(`  - ${chofer1.nombre} (Chofer)`);
     console.log(`  - ${chofer2.nombre} (Chofer)`);
+    console.log(`  - ${chofer3.nombre} (Chofer)`);
+    console.log(`  - ${chofer4.nombre} (Chofer)`);
     console.log(`  - ${pasajero1.nombre} (Pasajero)`);
     console.log(`  - ${pasajero2.nombre} (Pasajero)`);
-    console.log(`  - 2 autos`);
-    console.log(`  - 2 viajes programados`);
+    console.log(`  - 4 autos`);
+    console.log(`  - 4 viajes programados`);
   }
 
   private async createRemiseriaDemo(): Promise<Remiseria> {
@@ -182,8 +250,8 @@ export class DemoSeed {
         tiempoCancelacionMinutos: 30,
       };
       existing.zonaOperacion = {
-        latitud: -24.1858,
-        longitud: -65.2995,
+        latitud: -24.191027,
+        longitud: -65.302419,
         radioKm: 50,
         ciudades: ['San Salvador de Jujuy', 'Perico'],
       };
@@ -205,10 +273,63 @@ export class DemoSeed {
         tiempoCancelacionMinutos: 30,
       },
       zonaOperacion: {
-        latitud: -24.1858,
-        longitud: -65.2995,
+        latitud: -24.191027,
+        longitud: -65.302419,
         radioKm: 50,
         ciudades: ['San Salvador de Jujuy', 'Perico'],
+      },
+    });
+
+    return this.remiseriaRepository.save(remiseria);
+  }
+
+  private async createRemiseriaPerico(): Promise<Remiseria> {
+    const existing = await this.remiseriaRepository.findOne({
+      where: { cuit: '30987654321' },
+    });
+
+    if (existing) {
+      console.log('  ℹ️  Remisería Perico ya existe, actualizando...');
+      existing.nombre = 'Remisería Perico';
+      existing.telefono = '388-7654321';
+      existing.email = 'info@remiseriaperico.com';
+      existing.direccion = 'Perico, Jujuy, Argentina';
+      existing.estado = RemiseriaEstado.ACTIVA;
+      existing.configuracion = {
+        tarifaBase: 500,
+        tarifaPorKm: 50,
+        maxAutosPorChofer: 3,
+        maxAsientosPorAuto: 4,
+        tiempoCancelacionMinutos: 30,
+      };
+      existing.zonaOperacion = {
+        latitud: -24.386421,
+        longitud: -65.114175,
+        radioKm: 40,
+        ciudades: ['Perico', 'San Salvador de Jujuy', 'El Carmen'],
+      };
+      return this.remiseriaRepository.save(existing);
+    }
+
+    const remiseria = this.remiseriaRepository.create({
+      nombre: 'Remisería Perico',
+      cuit: '30987654321',
+      telefono: '388-7654321',
+      email: 'info@remiseriaperico.com',
+      direccion: 'Perico, Jujuy, Argentina',
+      estado: RemiseriaEstado.ACTIVA,
+      configuracion: {
+        tarifaBase: 500,
+        tarifaPorKm: 50,
+        maxAutosPorChofer: 3,
+        maxAsientosPorAuto: 4,
+        tiempoCancelacionMinutos: 30,
+      },
+      zonaOperacion: {
+        latitud: -24.386421,
+        longitud: -65.114175,
+        radioKm: 40,
+        ciudades: ['Perico', 'San Salvador de Jujuy', 'El Carmen'],
       },
     });
 
@@ -355,15 +476,29 @@ export class DemoSeed {
   }
 
   private async createDestinosDemo(): Promise<Destino[]> {
+    // Coordenadas: terminal de ómnibus / parada de remises de cada localidad
+    // (puntos de referencia para la demo).
     const localidades = [
+      // Terminal de Ómnibus de San Salvador (salida habitual a Perico)
       { nombre: 'San Salvador de Jujuy', latitud: -24.191027, longitud: -65.302419 },
+      // Parada de remises de Perico (centro)
       { nombre: 'Perico', latitud: -24.386421, longitud: -65.114175 },
+      // Palpalá centro
       { nombre: 'Palpalá', latitud: -24.2566, longitud: -65.2119 },
+      // Terminal de Humahuaca
       { nombre: 'Humahuaca', latitud: -23.2054, longitud: -65.3495 },
+      // Terminal de La Quiaca
       { nombre: 'La Quiaca', latitud: -22.1042, longitud: -65.5701 },
+      // Terminal de San Pedro de Jujuy
       { nombre: 'San Pedro de Jujuy', latitud: -24.2313, longitud: -64.8661 },
+      // El Carmen centro/parada
       { nombre: 'El Carmen', latitud: -24.3891, longitud: -65.2622 },
+      // Monterrico centro/parada
+      { nombre: 'Monterrico', latitud: -24.4440, longitud: -65.1707 },
+      // Calilegua centro
       { nombre: 'Calilegua', latitud: -23.7790, longitud: -64.8490 },
+      // Terminal de Libertador Gral. San Martín (Ledesma)
+      { nombre: 'Libertador Gral. San Martín', latitud: -23.8119, longitud: -64.7845 },
     ];
 
     const destinos: Destino[] = [];

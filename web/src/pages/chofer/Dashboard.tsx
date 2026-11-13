@@ -5,6 +5,7 @@ import { Spinner, EmptyState } from '@/components/ui';
 import { useToast } from '@/components/Toast';
 import Mapa, { type Marcador } from '@/components/Mapa';
 import Icon from '@/components/Icon';
+import ChatInbox from '@/components/ChatInbox';
 import type { Viaje, Chofer, Reserva } from '@/types';
 import { useNavigate } from 'react-router-dom';
 
@@ -291,6 +292,8 @@ export default function ChoferDashboard() {
           </div>
         </aside>
       </div>
+
+      <ChatInbox />
     </div>
   );
 }

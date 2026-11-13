@@ -21,6 +21,12 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 export class ChatController {
   constructor(private chatService: ChatService) {}
 
+  @Get('conversaciones')
+  @ApiOperation({ summary: 'Conversaciones del usuario (último mensaje + no leídos)' })
+  conversaciones(@Req() req: any) {
+    return this.chatService.conversaciones(req.user.idUsuario);
+  }
+
   @Get('reserva/:idReserva')
   @ApiOperation({ summary: 'Historial de mensajes de una reserva' })
   listar(

@@ -26,14 +26,15 @@ export default function BuscarViajes() {
   const [origen, setOrigen] = useState<Destino | null>(null);
   const [destino, setDestino] = useState<Destino | null>(null);
   const [asientos, setAsientos] = useState(1);
+  const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10));
   const [confirmando, setConfirmando] = useState<Viaje | null>(null);
 
   const idPasajero = user?.pasajero?.idPasajero;
 
-  const buscarCon = (o: Destino, d: Destino) => {
+  const buscarCon = (o: Destino, d: Destino, f?: string) => {
     setLoading(true);
     api.get<Viaje[]>('/viajes/disponibles', {
-      params: { origen: o.idDestino, destino: d.idDestino },
+      params: { origen: o.idDestino, destino: d.idDestino, fecha: f || fecha },
     })
       .then((r) => setViajes(r.data))
       .catch(() => toast('error', 'Error al buscar viajes'))
@@ -181,9 +182,10 @@ export default function BuscarViajes() {
             <div className="input-box">
               <Icon name="calendar" />
               <input
-                type="text"
-                readOnly
-                value={new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', weekday: 'short' })}
+                type="date"
+                value={fecha}
+                min={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setFecha(e.target.value)}
               />
             </div>
           </label>
@@ -244,6 +246,7 @@ export default function BuscarViajes() {
                     </button>
                   </div>
                 </div>
+
               </div>
             ))}
           </div>

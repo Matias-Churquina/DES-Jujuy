@@ -114,12 +114,14 @@ export class ViajesService {
   async findDisponibles(
     idOrigen: number,
     idDestino: number,
+    fecha?: string,
   ): Promise<Viaje[]> {
     return this.viajeRepository.find({
       where: {
         idOrigen,
         idDestino,
         estadoViaje: ViajeEstado.ABIERTO,
+        ...(fecha ? { fechaSalida: new Date(fecha) } : {}),
       },
       relations: ['chofer', 'chofer.usuario', 'auto', 'origen', 'destino'],
       order: { fechaSalida: 'ASC', horaSalida: 'ASC' },
