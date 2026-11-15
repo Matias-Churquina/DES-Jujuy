@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, LessThan, Repository } from 'typeorm';
 import { Usuario, UserRole } from '../../modules/users/entities/usuario.entity';
 import { Admin } from '../../modules/users/entities/admin.entity';
 import { Remiseria, RemiseriaEstado } from '../../modules/remiserias/entities/remiseria.entity';
@@ -173,16 +173,7 @@ export class DemoSeed {
       fmt(hoy),
       '08:00:00',
       4,
-    );
-
-    await this.createViajeDemo(
-      idChofer2,
-      auto2.idAuto,
-      sanSalvador.idDestino,
-      perico.idDestino,
-      fmt(pasado),
-      '14:00:00',
-      4,
+      ViajeEstado.FINALIZADO,
     );
 
     await this.createViajeDemo(
@@ -190,9 +181,10 @@ export class DemoSeed {
       auto3.idAuto,
       perico.idDestino,
       sanSalvador.idDestino,
-      fmt(manana),
-      '09:30:00',
+      fmt(hoy),
+      '14:00:00',
       4,
+      ViajeEstado.EN_CURSO,
     );
 
     await this.createViajeDemo(
@@ -203,6 +195,40 @@ export class DemoSeed {
       fmt(hoy),
       '16:30:00',
       4,
+    );
+
+    await this.createViajeDemo(
+      idChofer2,
+      auto2.idAuto,
+      sanSalvador.idDestino,
+      perico.idDestino,
+      fmt(manana),
+      '09:30:00',
+      4,
+    );
+
+    await this.createViajeDemo(
+      idChofer1,
+      auto1.idAuto,
+      perico.idDestino,
+      sanSalvador.idDestino,
+      fmt(pasado),
+      '14:00:00',
+      4,
+    );
+
+    // Los viajes de días anteriores quedan FINALIZADOS: son historia, no
+    // salidas vigentes — el dashboard y la búsqueda reflejan datos reales.
+    await this.viajeRepository.update(
+      {
+        fechaSalida: LessThan(fmt(hoy) as any),
+        estadoViaje: In([
+          ViajeEstado.ABIERTO,
+          ViajeEstado.EN_CURSO,
+          ViajeEstado.COMPLETO,
+        ]),
+      },
+      { estadoViaje: ViajeEstado.FINALIZADO },
     );
 
     // Demo: choferes con última posición conocida en Perico (punto de partida)
@@ -268,7 +294,7 @@ export class DemoSeed {
     console.log(`  - ${pasajero1.nombre} (Pasajero)`);
     console.log(`  - ${pasajero2.nombre} (Pasajero)`);
     console.log(`  - 4 autos`);
-    console.log(`  - 4 viajes programados`);
+    console.log(`  - 5 viajes programados`);
     console.log(`  - 2 paquetes demo (DES-DEMO0001, DES-DEMO0002)`);
   }
 
@@ -570,6 +596,7 @@ export class DemoSeed {
     fecha: string,
     hora: string,
     asientos: number,
+    estado: ViajeEstado = ViajeEstado.ABIERTO,
   ): Promise<Viaje> {
     // Verificar si ya existe un viaje con estos datos
     const existing = await this.viajeRepository.findOne({
@@ -587,7 +614,7 @@ export class DemoSeed {
       existing.idAuto = idAuto;
       existing.tarifaPorAsiento = 800;
       existing.asientosDisponibles = asientos;
-      existing.estadoViaje = ViajeEstado.ABIERTO;
+      existing.estadoViaje = estado;
       existing.ruta = {
         distanciaKm: 33,
         duracionMinutos: 30,
@@ -611,7 +638,7 @@ export class DemoSeed {
       horaSalida: hora,
       tarifaPorAsiento: 800,
       asientosDisponibles: asientos,
-      estadoViaje: ViajeEstado.ABIERTO,
+      estadoViaje: estado,
       ruta: {
         distanciaKm: 33,
         duracionMinutos: 30,
