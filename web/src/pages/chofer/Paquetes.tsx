@@ -16,7 +16,7 @@ export default function ChoferPaquetes() {
   const { toast } = useToast();
   const [paquetes, setPaquetes] = useState<Paquete[]>([]);
   const [incidencia, setIncidencia] = useState<{id: number; motivo: string} | null>(null);
-  const [retiro, setRetiro] = useState<Paquete | null>(null);
+  const [entrega, setEntrega] = useState<Paquete | null>(null);
   const [loading, setLoading] = useState(true);
   const idChofer = user?.chofer?.idChofer;
 
@@ -67,11 +67,11 @@ export default function ChoferPaquetes() {
       </div>
       <div className="flex gap-2 mt-3 flex-wrap">
         {p.estado === 'ASIGNADO' && (
-          <Button onClick={() => setRetiro(p)}>Retirado</Button>
+          <Button onClick={() => actualizar(p, 'EN_TRANSITO', 'Paquete retirado')}>Retirado</Button>
         )}
         {p.estado === 'EN_TRANSITO' && (
           <>
-            <Button onClick={() => actualizar(p, 'ENTREGADO', 'Entrega realizada')}>✅ Entregar</Button>
+            <Button onClick={() => setEntrega(p)}>Entregar</Button>
             <Button variant="secondary" onClick={() => setIncidencia({ id: p.idPaquete, motivo: '' })}>⚠️ Incidencia</Button>
           </>
         )}
@@ -98,28 +98,29 @@ export default function ChoferPaquetes() {
         </>
       )}
 
-      {retiro && (
-        <div className="confirm-overlay" onClick={() => setRetiro(null)}>
+      {entrega && (
+        <div className="confirm-overlay" onClick={() => setEntrega(null)}>
           <div className="card confirm-card" onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ fontSize: 15, marginBottom: 4 }}>Confirmar retiro</h3>
+            <h3 style={{ fontSize: 15, marginBottom: 4 }}>Confirmar entrega</h3>
             <p style={{ color: 'var(--muted)', fontSize: 11, marginBottom: 12 }}>
-              Verificá que el paquete físico coincida con este código antes de salir.
+              Mostrale este código al destinatario y verificá que coincida con su ticket antes de entregar.
             </p>
             <div className="confirm-rows">
-              <div><span>Código del paquete</span><strong className="font-mono">{retiro.codigoSeguimiento}</strong></div>
-              <div><span>Contenido</span><strong>{retiro.descripcion}</strong></div>
-              <div><span>Destino</span><strong>{retiro.destino?.direccion}</strong></div>
+              <div><span>Código del paquete</span><strong className="font-mono">{entrega.codigoSeguimiento}</strong></div>
+              <div><span>Contenido</span><strong>{entrega.descripcion}</strong></div>
+              <div><span>Entrega en</span><strong>{entrega.destino?.direccion}</strong></div>
+              <div><span>Contacto</span><strong>{entrega.destino?.telefono}</strong></div>
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-              <button className="secondary-button" style={{ flex: 1 }} onClick={() => setRetiro(null)}>
+              <button className="secondary-button" style={{ flex: 1 }} onClick={() => setEntrega(null)}>
                 Volver
               </button>
               <button
                 className="primary-button"
                 style={{ flex: 1 }}
                 onClick={() => {
-                  actualizar(retiro, 'EN_TRANSITO', 'Paquete retirado — código verificado');
-                  setRetiro(null);
+                  actualizar(entrega, 'ENTREGADO', 'Entregado — código verificado con destinatario');
+                  setEntrega(null);
                 }}
               >
                 Listo
