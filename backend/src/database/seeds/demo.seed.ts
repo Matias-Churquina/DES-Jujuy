@@ -154,19 +154,23 @@ export class DemoSeed {
       (d) => d.nombre === 'San Salvador de Jujuy',
     )!;
 
-    // Crear viajes (fechas futuras para que sean reservables)
+    // Crear viajes: 2 hoy (para el KPI "Viajes de hoy"), 1 mañana y 1
+    // pasado mañana. fmt usa fecha LOCAL — toISOString() daría la fecha UTC
+    // y correría el día en Argentina (UTC-3).
+    const hoy = new Date();
     const manana = new Date();
     manana.setDate(manana.getDate() + 1);
     const pasado = new Date(manana);
     pasado.setDate(pasado.getDate() + 1);
-    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
     await this.createViajeDemo(
       idChofer1,
       auto1.idAuto,
       perico.idDestino,
       sanSalvador.idDestino,
-      fmt(manana),
+      fmt(hoy),
       '08:00:00',
       4,
     );
@@ -196,7 +200,7 @@ export class DemoSeed {
       auto4.idAuto,
       sanSalvador.idDestino,
       perico.idDestino,
-      fmt(manana),
+      fmt(hoy),
       '16:30:00',
       4,
     );
