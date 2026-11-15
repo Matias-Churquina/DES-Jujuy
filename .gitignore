@@ -50,3 +50,7 @@ mobile/android/.gradle/
 mobile/ios/Pods/
 mobile/.expo/
 mobile/expo-shared-assets/
+
+# Documentos de pitch — locales mientras se pulen
+MODELO-NEGOCIO.md
+pitch/
