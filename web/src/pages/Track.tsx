@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import Mapa, { type Marcador } from '@/components/Mapa';
@@ -17,6 +17,7 @@ const iconEstado: Record<string, string> = {
 
 export default function Track() {
   const { codigo: codigoUrl } = useParams();
+  const navigate = useNavigate();
   const [codigo, setCodigo] = useState(codigoUrl || '');
   const [data, setData] = useState<TrackingPaquete | null>(null);
   const [loading, setLoading] = useState(!!codigoUrl);
@@ -70,12 +71,21 @@ export default function Track() {
     (data?.ubicacionActual != null || data?.estado === 'EN_TRANSITO' || data?.estado === 'ASIGNADO');
 
   return (
-    <div className="min-h-screen bg-surface p-4 md:p-8">
+    <div className="min-h-screen bg-surface dark:bg-gray-950 p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-primary-600">DES</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Seguimiento de envío</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/'))}
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
+              aria-label="Volver"
+            >
+              ← Volver
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-primary-600">DES</h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Seguimiento de envío</p>
+            </div>
           </div>
           <Link to="/login" className="text-sm text-primary-600 hover:underline">Ingresar →</Link>
         </div>

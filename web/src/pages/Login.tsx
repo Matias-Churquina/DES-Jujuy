@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/store/auth';
 import { Button, Input } from '@/components/ui';
 import { useToast } from '@/components/Toast';
@@ -38,6 +38,12 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-600 to-purple-700 p-4">
+      <Link
+        to="/"
+        className="absolute top-4 left-4 text-sm text-white/80 hover:text-white transition-colors"
+      >
+        ← Volver al inicio
+      </Link>
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-10 w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-primary-600">DES</h1>
