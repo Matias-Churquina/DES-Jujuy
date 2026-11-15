@@ -120,8 +120,10 @@ export default function Track() {
             </Card>
 
             {mostrarMapa && (
-              <div className="mb-4" style={{ height: 280 }}>
-                <Mapa marcadores={marcadores} />
+              <div className="mb-4">
+                <div style={{ height: 280 }}>
+                  <Mapa marcadores={marcadores} />
+                </div>
                 {data.estado === 'EN_TRANSITO' && data.chofer?.nombre && (
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                     🚗 {data.chofer.nombre} está llevando tu paquete{data.ubicacionActual ? ` — actualizado ${new Date(data.ubicacionActual.fechaHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}` : ''}
