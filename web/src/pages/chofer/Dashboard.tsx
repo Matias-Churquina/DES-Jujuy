@@ -141,7 +141,8 @@ export default function ChoferDashboard() {
   const ganancia = reservas
     .filter((r) => r.estadoPago === 'PAGADO')
     .reduce((a, r) => a + Number(r.importeTotal), 0);
-  const viajesHoy = viajes.filter((v) => v.fechaSalida === new Date().toISOString().slice(0, 10)).length;
+  const hoy = new Date().toLocaleDateString('en-CA');
+  const viajesHoy = viajes.filter((v) => String(v.fechaSalida).slice(0, 10) === hoy).length;
 
   const marcadores: Marcador[] = viajeActual
     ? [

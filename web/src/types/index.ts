@@ -135,6 +135,9 @@ export interface TrackingPaquete {
   origenDireccion?: string;
   destinoDireccion?: string;
   remiseria?: string;
+  origen?: { latitud?: number; longitud?: number; direccion: string; contacto?: string; telefono?: string };
+  destino?: { latitud?: number; longitud?: number; direccion: string; contacto?: string; telefono?: string };
+  chofer?: { latitud: number; longitud: number; fechaHora?: string | null; nombre?: string | null } | null;
   createdAt: string;
   ubicacionActual?: { latitud: number; longitud: number; fechaHora: string } | null;
   timeline: Trazabilidad[];

@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 import { Viaje, ViajeEstado } from './entities/viaje.entity';
 import { CreateViajeDto } from './dto/viaje.dto';
 import { Chofer } from '../choferes/entities/chofer.entity';
@@ -84,7 +84,7 @@ export class ViajesService {
       idAuto: dto.idAuto,
       idOrigen: dto.idOrigen,
       idDestino: dto.idDestino,
-      fechaSalida: new Date(dto.fechaSalida),
+      fechaSalida: dto.fechaSalida as any,
       horaSalida: dto.horaSalida,
       tarifaPorAsiento: dto.tarifaPorAsiento,
       asientosDisponibles: dto.asientosDisponibles,
@@ -121,7 +121,10 @@ export class ViajesService {
         idOrigen,
         idDestino,
         estadoViaje: ViajeEstado.ABIERTO,
-        ...(fecha ? { fechaSalida: new Date(fecha) } : {}),
+        // 'YYYY-MM-DD' directo: evita que el TZ del server corra el día
+        fechaSalida: fecha
+          ? (fecha as any)
+          : MoreThanOrEqual(new Date().toISOString().slice(0, 10) as any),
       },
       relations: ['chofer', 'chofer.usuario', 'auto', 'origen', 'destino'],
       order: { fechaSalida: 'ASC', horaSalida: 'ASC' },

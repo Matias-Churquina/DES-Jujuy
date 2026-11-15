@@ -47,9 +47,27 @@ export default function Track() {
     };
   }, [data?.codigoSeguimiento]);
 
-  const marcadores: Marcador[] = data?.ubicacionActual
-    ? [{ lat: data.ubicacionActual.latitud, lng: data.ubicacionActual.longitud, emoji: '📦' }]
+  const marcadores: Marcador[] = data
+    ? [
+        ...(data.origen?.latitud != null
+          ? [{ lat: Number(data.origen.latitud), lng: Number(data.origen.longitud), emoji: '🏠' }]
+          : []),
+        ...(data.destino?.latitud != null
+          ? [{ lat: Number(data.destino.latitud), lng: Number(data.destino.longitud), emoji: '📍' }]
+          : []),
+        ...(data.ubicacionActual
+          ? [{
+              lat: Number(data.ubicacionActual.latitud),
+              lng: Number(data.ubicacionActual.longitud),
+              emoji: data.estado === 'EN_TRANSITO' ? '🚗' : '📦',
+            }]
+          : []),
+      ]
     : [];
+
+  const mostrarMapa =
+    marcadores.length > 0 &&
+    (data?.ubicacionActual != null || data?.estado === 'EN_TRANSITO' || data?.estado === 'ASIGNADO');
 
   return (
     <div className="min-h-screen bg-surface p-4 md:p-8">
@@ -69,7 +87,7 @@ export default function Track() {
               onChange={(e) => setCodigo(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && buscar(codigo)}
               placeholder="Código del ticket (ej: DES-AB3F5K2M)"
-              className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm uppercase font-mono focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm uppercase font-mono bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <Button onClick={() => buscar(codigo)}>Buscar</Button>
           </div>
@@ -91,9 +109,14 @@ export default function Track() {
               </div>
             </Card>
 
-            {data.ubicacionActual && (
+            {mostrarMapa && (
               <div className="mb-4" style={{ height: 280 }}>
                 <Mapa marcadores={marcadores} />
+                {data.estado === 'EN_TRANSITO' && data.chofer?.nombre && (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                    🚗 {data.chofer.nombre} está llevando tu paquete{data.ubicacionActual ? ` — actualizado ${new Date(data.ubicacionActual.fechaHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                  </p>
+                )}
               </div>
             )}
 

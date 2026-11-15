@@ -82,6 +82,10 @@ export class Paquete {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   tarifa: number;
 
+  /** Valor declarado del contenido (para seguro/negociación). */
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  valorDeclarado: number;
+
   @Column({
     type: 'enum',
     enum: PagoPaqueteEstado,

@@ -13,9 +13,34 @@ const colorEstado: Record<string, string> = {
 };
 
 const FORM_VACIO = {
-  descripcion: '', peso: '', tarifa: '500', prioridad: 'NORMAL',
-  origenDetalle: '', origenTel: '', destinoDetalle: '', destinoTel: '', notas: '',
+  descripcion: '', peso: '', valorDeclarado: '500', prioridad: 'NORMAL',
+  origenTel: '', destinoTel: '', notas: '',
 };
+
+// Tarifario demo: base según distancia (Haversine entre paradas) y
+// +$500 por cada 500g adicionales sobre el primer kilo.
+const UMBRAL_KM = 40;
+const BASE_CERCA = 2000;
+const BASE_LEJOS = 4000;
+const EXTRA_POR_500G = 500;
+
+function distanciaKm(a: Destino, b: Destino): number {
+  const R = 6371;
+  const dLat = (((b.latitud ?? 0) - (a.latitud ?? 0)) * Math.PI) / 180;
+  const dLng = (((b.longitud ?? 0) - (a.longitud ?? 0)) * Math.PI) / 180;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((((a.latitud ?? 0)) * Math.PI) / 180) *
+      Math.cos((((b.latitud ?? 0)) * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+function calcularPrecio(pesoKg: number, km: number): { base: number; extra: number; total: number; km: number } {
+  const base = km > UMBRAL_KM ? BASE_LEJOS : BASE_CERCA;
+  const extra = pesoKg > 1 ? Math.ceil((pesoKg - 1) / 0.5) * EXTRA_POR_500G : 0;
+  return { base, extra, total: base + extra, km };
+}
 
 export default function Paqueteria() {
   const { user } = useAuth();
@@ -54,14 +79,15 @@ export default function Paqueteria() {
         descripcion: form.descripcion,
         peso: form.peso ? Number(form.peso) : undefined,
         prioridad: form.prioridad,
-        tarifa: Number(form.tarifa),
+        tarifa: precio?.total,
+        valorDeclarado: form.valorDeclarado ? Number(form.valorDeclarado) : undefined,
         origen: {
-          direccion: form.origenDetalle ? `${origen.nombre} — ${form.origenDetalle}` : origen.nombre,
+          direccion: `${origen.nombre} (parada)`,
           latitud: origen.latitud, longitud: origen.longitud,
           telefono: form.origenTel,
         },
         destino: {
-          direccion: form.destinoDetalle ? `${destino.nombre} — ${form.destinoDetalle}` : destino.nombre,
+          direccion: `${destino.nombre} (parada)`,
           latitud: destino.latitud, longitud: destino.longitud,
           telefono: form.destinoTel,
         },
@@ -81,7 +107,14 @@ export default function Paqueteria() {
     }
   };
 
-  const puede = form.descripcion && origen && destino && form.origenTel && form.destinoTel && Number(form.tarifa) > 0;
+  const precio =
+    origen && destino && origen.latitud != null && destino.latitud != null
+      ? calcularPrecio(form.peso ? Number(form.peso) : 0, distanciaKm(origen, destino))
+      : null;
+
+  const puede =
+    form.descripcion && origen && destino &&
+    form.origenTel && form.destinoTel && precio != null;
 
   if (loading) return <Spinner />;
 
@@ -107,12 +140,12 @@ export default function Paqueteria() {
           <div className="grid md:grid-cols-2 gap-4">
             <Input label="Descripción *" value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} placeholder="Ej: Caja con libros, documentos" />
             <div className="grid grid-cols-2 gap-3">
-              <Input label="Peso (kg)" type="number" value={form.peso} onChange={(e) => setForm({ ...form, peso: e.target.value })} />
-              <Input label="Tarifa ($) *" type="number" value={form.tarifa} onChange={(e) => setForm({ ...form, tarifa: e.target.value })} />
+              <Input label="Peso (kg)" type="number" min="0" step="0.1" value={form.peso} onChange={(e) => setForm({ ...form, peso: e.target.value })} />
+              <Input label="Valor declarado ($)" type="number" min="0" value={form.valorDeclarado} onChange={(e) => setForm({ ...form, valorDeclarado: e.target.value })} placeholder="Valor del contenido" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Prioridad</label>
-              <select className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value={form.prioridad} onChange={(e) => setForm({ ...form, prioridad: e.target.value })}>
+              <select className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" value={form.prioridad} onChange={(e) => setForm({ ...form, prioridad: e.target.value })}>
                 <option value="NORMAL">Normal</option>
                 <option value="URGENTE">Urgente</option>
                 <option value="FRAGIL">Frágil</option>
@@ -122,18 +155,26 @@ export default function Paqueteria() {
           </div>
           <div className="grid md:grid-cols-2 gap-4 mt-4">
             <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3">
-              <p className="text-sm font-medium">📤 Origen (retiro)</p>
+              <p className="text-sm font-medium">📤 Origen (retiro en parada)</p>
               <DestinoSelect label="Localidad *" value={origen} onChange={setOrigen} destinos={destinos} excluir={destino?.idDestino} />
-              <Input label="Dirección detallada" value={form.origenDetalle} onChange={(e) => setForm({ ...form, origenDetalle: e.target.value })} placeholder="Ej: Belgrano 450, Barrio Centro" />
-              <Input label="Teléfono *" value={form.origenTel} onChange={(e) => setForm({ ...form, origenTel: e.target.value })} placeholder="388..." />
+              <Input label="Teléfono de contacto *" value={form.origenTel} onChange={(e) => setForm({ ...form, origenTel: e.target.value })} placeholder="388..." />
             </div>
             <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3">
-              <p className="text-sm font-medium">📥 Destino (entrega)</p>
+              <p className="text-sm font-medium">📥 Destino (entrega en parada)</p>
               <DestinoSelect label="Localidad *" value={destino} onChange={setDestino} destinos={destinos} excluir={origen?.idDestino} />
-              <Input label="Dirección detallada" value={form.destinoDetalle} onChange={(e) => setForm({ ...form, destinoDetalle: e.target.value })} placeholder="Ej: San Martín 123" />
-              <Input label="Teléfono *" value={form.destinoTel} onChange={(e) => setForm({ ...form, destinoTel: e.target.value })} placeholder="388..." />
+              <Input label="Teléfono de contacto *" value={form.destinoTel} onChange={(e) => setForm({ ...form, destinoTel: e.target.value })} placeholder="388..." />
             </div>
           </div>
+          {precio && (
+            <div className="mt-4 flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                ~{Math.round(precio.km)} km · base ${precio.base.toLocaleString('es-AR')}
+                {precio.extra > 0 && ` + $${precio.extra.toLocaleString('es-AR')} por peso`}
+                <span className="block">Máx. 50×50×50 cm</span>
+              </div>
+              <strong className="text-lg">${precio.total.toLocaleString('es-AR')}</strong>
+            </div>
+          )}
           <div className="mt-4">
             <Button onClick={enviar} disabled={!puede || guardando}>
               {guardando ? 'Registrando...' : 'Registrar envío'}

@@ -8,6 +8,8 @@ import { Pasajero } from '../../modules/pasajeros/entities/pasajero.entity';
 import { Auto } from '../../modules/autos/entities/auto.entity';
 import { Viaje } from '../../modules/viajes/entities/viaje.entity';
 import { Destino } from '../../modules/destinos/entities/destino.entity';
+import { Paquete } from '../../modules/paquetes/entities/paquete.entity';
+import { TrazabilidadPaquete } from '../../modules/trazabilidad/entities/trazabilidad-paquete.entity';
 import { Admin } from '../../modules/users/entities/admin.entity';
 
 @Module({
@@ -21,6 +23,8 @@ import { Admin } from '../../modules/users/entities/admin.entity';
       Auto,
       Viaje,
       Destino,
+      Paquete,
+      TrazabilidadPaquete,
     ]),
   ],
   providers: [DemoSeed],

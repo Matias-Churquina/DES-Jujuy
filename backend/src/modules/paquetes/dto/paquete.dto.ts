@@ -21,6 +21,7 @@ export class CreatePaqueteDto {
   @ApiPropertyOptional() @IsOptional() @IsString() dimensiones?: string;
   @ApiPropertyOptional({ enum: PaquetePrioridad }) @IsOptional() @IsEnum(PaquetePrioridad) prioridad?: PaquetePrioridad;
   @ApiProperty() @IsNumber() @IsPositive() tarifa: number;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() valorDeclarado?: number;
   @ApiProperty({ type: PuntoEntregaDto }) @IsObject() origen: PuntoEntregaDto;
   @ApiProperty({ type: PuntoEntregaDto }) @IsObject() destino: PuntoEntregaDto;
   @ApiPropertyOptional() @IsOptional() @IsString() notas?: string;

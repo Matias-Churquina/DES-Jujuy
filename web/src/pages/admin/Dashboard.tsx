@@ -33,9 +33,10 @@ export default function AdminDashboard() {
 
   if (loading) return <Spinner />;
 
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
+  const fechaViaje = (v: Viaje) => String(v.fechaSalida).slice(0, 10);
   const activos = choferes.filter((c) => c.estadoChofer === 'DISPONIBLE' || c.estadoChofer === 'EN_VIAJE').length;
-  const viajesHoy = viajes.filter((v) => v.fechaSalida === hoy).length;
+  const viajesHoy = viajes.filter((v) => fechaViaje(v) === hoy).length;
   const ingresos = viajes.reduce(
     (a, v) =>
       a +

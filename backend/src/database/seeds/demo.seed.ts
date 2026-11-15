@@ -9,6 +9,8 @@ import { Pasajero, PasajeroEstado } from '../../modules/pasajeros/entities/pasaj
 import { Auto, AutoEstado } from '../../modules/autos/entities/auto.entity';
 import { Viaje, ViajeEstado } from '../../modules/viajes/entities/viaje.entity';
 import { Destino } from '../../modules/destinos/entities/destino.entity';
+import { Paquete, PaqueteEstado, PaquetePrioridad, PagoPaqueteEstado } from '../../modules/paquetes/entities/paquete.entity';
+import { TrazabilidadPaquete } from '../../modules/trazabilidad/entities/trazabilidad-paquete.entity';
 // bcrypt is no longer needed here as passwords are hashed by entity hooks
 
 @Injectable()
@@ -30,6 +32,10 @@ export class DemoSeed {
     private viajeRepository: Repository<Viaje>,
     @InjectRepository(Destino)
     private destinoRepository: Repository<Destino>,
+    @InjectRepository(Paquete)
+    private paqueteRepository: Repository<Paquete>,
+    @InjectRepository(TrazabilidadPaquete)
+    private trazabilidadRepository: Repository<TrazabilidadPaquete>,
   ) {}
 
   async seed() {
@@ -215,6 +221,38 @@ export class DemoSeed {
       { latitud: -24.3881, longitud: -65.1115 },
     );
 
+    // Demo paquetería: un envío en tránsito con Carlos y otro asignado a
+    // Pedro, con códigos fijos para probar el tracking público.
+    const idPasajero1 = pasajero1.pasajero?.idPasajero;
+    const idPasajero2 = pasajero2.pasajero?.idPasajero;
+    if (!idPasajero1 || !idPasajero2) {
+      throw new Error('No se pudieron crear los pasajeros correctamente');
+    }
+    await this.createPaqueteDemo(
+      idPasajero1,
+      remiseria.idRemiseria,
+      idChofer1,
+      PaqueteEstado.EN_TRANSITO,
+      'DES-DEMO0001',
+      'Caja con libros',
+      sanSalvador,
+      perico,
+      '388-1111111',
+      '388-2222222',
+    );
+    await this.createPaqueteDemo(
+      idPasajero2,
+      remiseriaPerico.idRemiseria,
+      idChofer3,
+      PaqueteEstado.ASIGNADO,
+      'DES-DEMO0002',
+      'Documentos en sobre',
+      perico,
+      sanSalvador,
+      '388-3333333',
+      '388-4444444',
+    );
+
     console.log('✅ Seed de datos completado');
     console.log('📊 Datos creados:');
     console.log(`  - 2 remiserías: ${remiseria.nombre}, ${remiseriaPerico.nombre}`);
@@ -227,6 +265,7 @@ export class DemoSeed {
     console.log(`  - ${pasajero2.nombre} (Pasajero)`);
     console.log(`  - 4 autos`);
     console.log(`  - 4 viajes programados`);
+    console.log(`  - 2 paquetes demo (DES-DEMO0001, DES-DEMO0002)`);
   }
 
   private async createRemiseriaDemo(): Promise<Remiseria> {
@@ -533,7 +572,7 @@ export class DemoSeed {
       where: {
         idOrigen,
         idDestino,
-        fechaSalida: new Date(fecha),
+        fechaSalida: fecha as any,
         horaSalida: hora,
         idChofer,
       },
@@ -564,7 +603,7 @@ export class DemoSeed {
       idAuto,
       idOrigen,
       idDestino,
-      fechaSalida: new Date(fecha),
+      fechaSalida: fecha as any,
       horaSalida: hora,
       tarifaPorAsiento: 800,
       asientosDisponibles: asientos,
@@ -583,5 +622,117 @@ export class DemoSeed {
     });
 
     return this.viajeRepository.save(viaje);
+  }
+
+  /**
+   * Paquete demo idempotente por código de seguimiento. Genera además los
+   * eventos de trazabilidad coherentes con el estado actual para que el
+   * tracking público muestre timeline y mapa.
+   */
+  private async createPaqueteDemo(
+    idRemitente: number,
+    idRemiseria: number,
+    idChofer: number,
+    estado: PaqueteEstado,
+    codigo: string,
+    descripcion: string,
+    origen: Destino,
+    destino: Destino,
+    telOrigen: string,
+    telDestino: string,
+  ): Promise<Paquete> {
+    const existing = await this.paqueteRepository.findOne({
+      where: { codigoSeguimiento: codigo },
+    });
+
+    if (existing) {
+      console.log(`  ℹ️  Paquete ${codigo} ya existe, actualizando...`);
+      existing.idChofer = idChofer;
+      existing.estado = estado;
+      return this.paqueteRepository.save(existing);
+    }
+
+    const paquete = this.paqueteRepository.create({
+      idRemiseria,
+      idChofer,
+      idPasajeroRemitente: idRemitente,
+      descripcion,
+      peso: 0.8,
+      dimensiones: '20x30x15',
+      estado,
+      prioridad: PaquetePrioridad.NORMAL,
+      tarifa: 2000,
+      valorDeclarado: 5000,
+      estadoPago: PagoPaqueteEstado.PAGADO,
+      codigoSeguimiento: codigo,
+      origen: {
+        direccion: `${origen.nombre} (parada)`,
+        latitud: origen.latitud,
+        longitud: origen.longitud,
+        telefono: telOrigen,
+      },
+      destino: {
+        direccion: `${destino.nombre} (parada)`,
+        latitud: destino.latitud,
+        longitud: destino.longitud,
+        telefono: telDestino,
+      },
+    });
+    const saved = await this.paqueteRepository.save(paquete);
+
+    // Eventos de trazabilidad según el estado alcanzado (con GPS en Perico
+    // y sobre la RN66 para que el mapa público tenga puntos reales).
+    const eventos: Array<{
+      anterior: PaqueteEstado;
+      nuevo: PaqueteEstado;
+      obs: string;
+      lat?: number;
+      lng?: number;
+    }> = [
+      {
+        anterior: PaqueteEstado.PENDIENTE_RECOGIDA,
+        nuevo: PaqueteEstado.RECIBIDO,
+        obs: 'Recibido en parada',
+        lat: Number(origen.latitud),
+        lng: Number(origen.longitud),
+      },
+      {
+        anterior: PaqueteEstado.RECIBIDO,
+        nuevo: PaqueteEstado.ASIGNADO,
+        obs: 'Asignado a móvil',
+      },
+      {
+        anterior: PaqueteEstado.ASIGNADO,
+        nuevo: PaqueteEstado.EN_TRANSITO,
+        obs: 'Paquete retirado — código verificado',
+        lat: -24.33,
+        lng: -65.18,
+      },
+    ];
+    const ORDEN = [
+      PaqueteEstado.PENDIENTE_RECOGIDA,
+      PaqueteEstado.RECIBIDO,
+      PaqueteEstado.ASIGNADO,
+      PaqueteEstado.EN_TRANSITO,
+      PaqueteEstado.ENTREGADO,
+    ];
+    const hasta = ORDEN.indexOf(estado);
+    for (const ev of eventos) {
+      if (ORDEN.indexOf(ev.nuevo) <= hasta) {
+        await this.trazabilidadRepository.save(
+          this.trazabilidadRepository.create({
+            idPaquete: saved.idPaquete,
+            estadoAnterior: ev.anterior,
+            estadoNuevo: ev.nuevo,
+            observaciones: ev.obs,
+            latitud: ev.lat,
+            longitud: ev.lng,
+            usuarioResponsable: 'seed-demo',
+          }),
+        );
+      }
+    }
+
+    return saved;
   }
 }

@@ -83,13 +83,25 @@ export class PaquetesService {
   async track(codigo: string) {
     const paquete = await this.paqueteRepository.findOne({
       where: { codigoSeguimiento: codigo.toUpperCase().trim() },
-      relations: ['trazabilidad', 'remiseria'],
+      relations: ['trazabilidad', 'remiseria', 'chofer', 'chofer.usuario'],
     });
     if (!paquete) throw new NotFoundException('Código de seguimiento no encontrado');
 
     const ultimoGps = [...(paquete.trazabilidad || [])]
       .filter((t) => t.latitud != null)
       .sort((a, b) => b.fechaHora.getTime() - a.fechaHora.getTime())[0];
+
+    // Si el paquete está en poder del chofer, su GPS en vivo es la mejor
+    // ubicación disponible; si no, cae al último evento de trazabilidad.
+    const choferVivo =
+      paquete.chofer?.latitud != null && paquete.chofer?.longitud != null
+        ? {
+            latitud: Number(paquete.chofer.latitud),
+            longitud: Number(paquete.chofer.longitud),
+            fechaHora: paquete.chofer.updatedAt ?? null,
+            nombre: paquete.chofer.usuario?.nombre ?? null,
+          }
+        : null;
 
     return {
       codigoSeguimiento: paquete.codigoSeguimiento,
@@ -99,8 +111,16 @@ export class PaquetesService {
       origenDireccion: paquete.origen?.direccion,
       destinoDireccion: paquete.destino?.direccion,
       remiseria: paquete.remiseria?.nombre,
+      origen: paquete.origen,
+      destino: paquete.destino,
+      chofer: choferVivo,
       createdAt: paquete.createdAt,
-      ubicacionActual: ultimoGps ? { latitud: ultimoGps.latitud, longitud: ultimoGps.longitud, fechaHora: ultimoGps.fechaHora } : null,
+      ubicacionActual:
+        choferVivo && paquete.estado === PaqueteEstado.EN_TRANSITO
+          ? choferVivo
+          : ultimoGps
+            ? { latitud: ultimoGps.latitud, longitud: ultimoGps.longitud, fechaHora: ultimoGps.fechaHora }
+            : null,
       timeline: (paquete.trazabilidad || [])
         .sort((a, b) => b.fechaHora.getTime() - a.fechaHora.getTime())
         .map((t) => ({
